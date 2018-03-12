@@ -1,0 +1,3 @@
+/home/liheng/git/15213/cmake_test/CMakeFiles/edit_cache.dir
+/home/liheng/git/15213/cmake_test/CMakeFiles/rebuild_cache.dir
+/home/liheng/git/15213/cmake_test/CMakeFiles/Demo.dir
