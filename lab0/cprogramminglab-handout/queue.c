@@ -22,14 +22,27 @@
 */
 queue_t *q_new()
 {
+    queue_t *qn= (queue_t*) malloc(sizeof(queue_t));
+    if (!qn) return NULL;
+    qn->head = NULL;
+    qn->tail = NULL;
+    qn->size = 0;
     /* Remember to handle the case if malloc returned NULL */
-    return NULL;
+    return qn;
 }
 
 /* Free all storage used by queue */
 void q_free(queue_t *q)
 {
     /* Remember to free the queue structue and list elements */
+    list_ele_t *nextp = q->head;
+    list_ele_t *nowp = q->head;
+    while (!nextp){
+        nextp=nextp->next;
+        free(nowp);
+        nowp=nextp;
+    }
+    free(q);
 }
 
 /*
@@ -39,8 +52,17 @@ void q_free(queue_t *q)
  */
 bool q_insert_head(queue_t *q, int v)
 {
+	
     /* What should you do if the q is NULL? */
+    if (!q) return false;
+    list_ele_t *insp = (list_ele_t*)malloc(sizeof(list_ele_t));
     /* What if malloc returned NULL? */
+    if (!insp) return false;
+    insp->value = v;
+    insp->next = q->head;
+    q->head = insp;
+    ++(q->size);
+    if (q->size == 1) q->tail = insp;
     return true;
 }
 
@@ -52,7 +74,15 @@ bool q_insert_head(queue_t *q, int v)
  */
 bool q_insert_tail(queue_t *q, int v)
 {
+    if (!q) return false;
+    list_ele_t *insp = (list_ele_t*)malloc(sizeof(list_ele_t));
     /* Remember: It should operate in O(1) time */
+    if (!insp) return false;
+    insp->value = v;
+    q->tail->next = insp;
+    q->tail = insp;
+    ++(q->size);
+    if (q->size == 1) q->head = insp;
     return false;
 }
 
@@ -65,6 +95,11 @@ bool q_insert_tail(queue_t *q, int v)
 */
 bool q_remove_head(queue_t *q, int *vp)
 {
+    if (!q||!(q->head)) return false;
+    if (!vp) *vp = q->head->value;
+    list_ele_t *delp = q->head;
+    q->head = q->head->next;
+    free(delp);
     return true;
 }
 
@@ -75,7 +110,7 @@ bool q_remove_head(queue_t *q, int *vp)
 int q_size(queue_t *q)
 {
     /* Remember: It should operate in O(1) time */
-    return 0;
+    return (!q?0:q->size);
 }
 
 /*
@@ -87,6 +122,20 @@ int q_size(queue_t *q)
  */
 void q_reverse(queue_t *q)
 {
-
+    if (q) {
+        if ((q->head)){
+            q->tail = q->head;
+            list_ele_t *p1 = q->head;
+            list_ele_t *p2 = p1->next;
+            while (p2){
+                list_ele_t *p3 = p1;
+                p1 = p2;
+                p2->next = p3;
+                p2 = p1->next;
+            }
+            q->head = p1;
+            }
+    }
 }
+
 
