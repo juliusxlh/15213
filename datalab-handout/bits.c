@@ -204,7 +204,7 @@ int bang(int x) {
  *   Rating: 1
  */
 int tmin(void) {
-  return 2;
+  return 1<<31;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
@@ -216,7 +216,12 @@ int tmin(void) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  return 2;
+  x = x | (x>>16);
+  x = x | (x>>8);
+  x = x | (x>>4);
+  x = x | (x>>2);
+  x = x | (x>>1);
+  return (~x)&0x1;
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
