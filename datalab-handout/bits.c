@@ -138,6 +138,7 @@ NOTES:
  *   Max ops: 8
  *   Rating: 1
  */
+ //#include <stdio.h>
 int bitAnd(int x, int y) {
   return ~((~x)|(~y));
 }
@@ -216,12 +217,11 @@ int tmin(void) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  x = x | (x>>16);
-  x = x | (x>>8);
-  x = x | (x>>4);
-  x = x | (x>>2);
-  x = x | (x>>1);
-  return (~x)&0x1;
+  int not = ~0;
+  int move = n+not;
+  x = x + (1<<move);
+  x = x & (not<<move<<1);
+  return (!x);
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
