@@ -23,10 +23,11 @@
 queue_t *q_new()
 {
     queue_t *qn= (queue_t*) malloc(sizeof(queue_t));
+    qn->size = (int *) malloc(sizeof(int));
     if (!qn) return NULL;
     qn->head = NULL;
     qn->tail = NULL;
-    qn->size = 0;
+    *(qn->size) = 0;
     /* Remember to handle the case if malloc returned NULL */
     return qn;
 }
@@ -35,15 +36,17 @@ queue_t *q_new()
 void q_free(queue_t *q)
 {
     /* Remember to free the queue structue and list elements */
-    if (!q) return;
     list_ele_t *nextp = q->head;
     list_ele_t *nowp = q->head;
-    while (nextp){
+    while (!nextp){
         nextp=nextp->next;
         free(nowp);
         nowp=nextp;
     }
+    free(q->size);
+    q->size = NULL;
     free(q);
+    q = NULL;
 }
 
 /*
@@ -62,8 +65,8 @@ bool q_insert_head(queue_t *q, int v)
     insp->value = v;
     insp->next = q->head;
     q->head = insp;
-    ++q->size;
-    if (q->size == 1) q->tail = insp;
+    ++*(q->size);
+    if (*(q->size) == 1) q->tail = insp;
     return true;
 }
 
@@ -84,12 +87,9 @@ bool q_insert_tail(queue_t *q, int v)
     if (q->size){
         q->tail->next = insp;
         q->tail = insp;
-    } else 
-    {
-        q->tail = insp;
-        q->head = q->tail;
-    }
-    ++q->size;
+    } else q->tail = insp;
+    ++*(q->size);
+    if (*(q->size) == 1) q->head = insp;
     return true;
 }
 /*
@@ -105,9 +105,9 @@ bool q_remove_head(queue_t *q, int *vp)
     if (vp) *vp = q->head->value;
     list_ele_t *delp = q->head;
     q->head = q->head->next;
-    if (!q->head) q->tail = NULL;
-    --q->size;
+    --*(q->size);
     free(delp);
+    delp = NULL;
     return true;
 }
 
@@ -119,7 +119,7 @@ int q_size(queue_t *q)
 {
     /* Remember: It should operate in O(1) time */
     if (!q) return 0;else
-    return q->size;
+    return *(q->size);
 }
 
 /*
