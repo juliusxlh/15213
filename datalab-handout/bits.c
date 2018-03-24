@@ -278,7 +278,12 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4
  */
 int ilog2(int x) {
-  return 2;
+    int bitsNumber=(!!(x>>16))<<4;
+    bitsNumber=bitsNumber+((!!(x>>(bitsNumber+8)))<<3);
+    bitsNumber=bitsNumber+((!!(x>>(bitsNumber+4)))<<2);
+    bitsNumber=bitsNumber+((!!(x>>(bitsNumber+2)))<<1);
+    bitsNumber=bitsNumber+(!!(x>>(bitsNumber+1)));
+  return bitsNumber;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
@@ -292,7 +297,11 @@ int ilog2(int x) {
  *   Rating: 2
  */
 unsigned float_neg(unsigned uf) {
- return 2;
+ if (uf==0xffc00000||uf==0x7fc00000) return uf;
+ //int fl = 0x01<<31;
+ //int nan = (((0xff<<1)+0x01)<<22)|fl;
+ //if ((uf<<1)==(nan<<1)) return uf;
+ return (uf^0x80000000);
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -303,8 +312,31 @@ unsigned float_neg(unsigned uf) {
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned float_i2f(int x) {
-  return 2;
+unsigned float_i2f(int x) 
+{
+  int fl8 = 0;
+  int fl31 = 0x01<<31;
+  int fl = fl31&x;
+  int move = 0x7f;
+  int sum = 31;
+  int fl23 = (0x01<<23)+(~0);
+  int ret = fl;
+  if (!x) return x;
+  if (fl) x = -x;
+  while (!(fl31&x)){
+    x = x<<1;
+    sum = sum - 1; 
+  }
+  move += sum;
+  fl8 = x&0xff;
+  x = x>>8;
+  if (fl8>0x80){ x=x+1;}else if (fl8==0x80 && (x&0x01)) x = x+1; 
+  if (!(x&(1<<24))) {
+    move++;
+    x>>=1;
+  }
+  ret = ret | (move<<23) | (fl23 & x);
+  return ret;
 }
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
@@ -318,5 +350,10 @@ unsigned float_i2f(int x) {
  *   Rating: 4
  */
 unsigned float_twice(unsigned uf) {
-  return 2;
+  int move = uf & 0x7f800000;
+  int fl = uf & 0x80000000;
+  if (move == 0) return (uf*2)|fl;
+  if (uf==0xffc00000||uf==0x7fc00000) return uf;
+  if (move == 0x7f800000 ) return uf;
+  return uf+(0x00800000);
 }
