@@ -163,8 +163,31 @@ int main(int argc, char **argv)
  * background children don't receive SIGINT (SIGTSTP) from the kernel
  * when we type ctrl-c (ctrl-z) at the keyboard.  
 */
+
 void eval(char *cmdline) 
 {
+	char* argv[MAXARGS];
+	int ret_back = parseline(cmdline,argv);
+	pid_t pid;
+	
+	if (!builtin_cmd(argv)){
+	
+		if (pid = Fork() == 0) {
+		    if (execve(argv[0], argv, )){
+			    printf("");
+			    exit(0);
+			}
+		}
+		
+		if (!ret_back){
+		   int status;
+		   if (waitpid(pid, &status, 0) < 0) unix_error("");
+		} else
+		{
+		    job_t temp;
+		    addjob(jobs, pid, BG, cmdline);
+		}
+	}
     return;
 }
 
@@ -231,6 +254,16 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+	if (strcmp(argv[0], "quit")){
+		
+	}
+	if (strcmp(argv[0], "fg")){
+	    getjobjid();
+	}
+	if (strcmp(argv[0], "bg")){
+	}
+	if (strcmp(argv[0], "quit")){
+	}
     return 0;     /* not a builtin command */
 }
 
