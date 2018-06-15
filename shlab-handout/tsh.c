@@ -1,4 +1,4 @@
-/* 
+=/* 
  * tsh - A tiny shell program with job control
  * 
  * <Put your name and login ID here>
@@ -254,16 +254,24 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-	if (strcmp(argv[0], "quit")){
-		
-	}
-	if (strcmp(argv[0], "fg")){
-	    getjobjid();
-	}
-	if (strcmp(argv[0], "bg")){
-	}
-	if (strcmp(argv[0], "quit")){
-	}
+//switch backward jobs to fg || run
+    if (strcmp(agrv[0],"fg") && (strcmp(argv[0],"bg"))){
+        do_bgfg(argv);
+    }
+    if (strcmp(argv[0],"jobs")){
+        listjobs(jobs);
+    }
+    if (strcmp(argv[0],"quit")){
+        for (int i=0; i!= MAXJID; i++){
+            struct job_t temp_job = getjobjid(jobs, i);
+            if (temp_job->state == BG){
+                pid_t temp_pid = temp_job->pid;
+                kill(-pid, SIGHUP); 
+            }
+        }
+        clearjob(jobs);
+        exit(0);
+    }
     return 0;     /* not a builtin command */
 }
 
@@ -272,6 +280,25 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+    int temp_jid = stoi(argv[1]);
+    job_t* temp_job = getjobjid(jobs, tempjid);
+    pid_t temp_pid = temp_job->pid;
+    if (strcmp(argv[0], "fg")){
+        if (temp_job->state == BG){
+            temp_job->state = FG;
+        }
+        if (temp_job->state == ST){
+            temp_job->state = FG;
+            kill(-temp_pid, SIGCONT);
+        }
+        wait(temp_pid);
+    }
+    if (strcmp(argv[0],"bg")){
+        if (temp_job->state == ST){
+            temp_job->state = BG;
+            kill(-temp_pid, SIGCONT);
+        }
+    }
     return;
 }
 
@@ -280,6 +307,15 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    sigset_t mask, prev;
+    Sigemptyset(&mask);
+    Sigaddset(&mask, SIGCHLD);
+    Sigprocmask(SIG_BLOCK, &mask, &prev);
+    //pid = 0;
+    while (TRUE){
+        sigsuspend(&prev);
+    }
+    Sigprocmask(SIG_SETMASK, &prev, NULL);
     return;
 }
 
