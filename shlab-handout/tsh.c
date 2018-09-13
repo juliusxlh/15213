@@ -176,6 +176,7 @@ void eval(char *cmdline)
 	int bg = parseline(cmdline, argv);//background or foreground
 	if (!builtin_cmd(argv))
 	{
+        printf("%d"
 		//block child SIGCHILD
 		sigprocmask(SIG_SETMASK, &mask_one, &prev_one);
 		if ((pid = fork()) == 0){
@@ -324,8 +325,8 @@ void waitfg(pid_t pid)
 	sigset_t mask;
 	sigemptyset(&mask);
 	while (1){
-		int ret = sigsuspend(&mask);
-		if (ret == SIGCHLD && fgpid(jobs) != pid) break;
+		sigsuspend(&mask);
+		if (fgpid(jobs) != pid) break;
 	}
     return;
 }
@@ -343,6 +344,7 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+    printf("%d\n",3);
 	pid_t pid;
 	int statue;
 	while ((pid = waitpid(-1, &statue, 0)) > 0){
