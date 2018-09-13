@@ -174,9 +174,9 @@ void eval(char *cmdline)
 	sigfillset(&mask_all);
 	
 	int bg = parseline(cmdline, argv);//background or foreground
+	//printf("~~%d!!\n",bg);
 	if (!builtin_cmd(argv))
 	{
-        printf("%d"
 		//block child SIGCHILD
 		sigprocmask(SIG_SETMASK, &mask_one, &prev_one);
 		if ((pid = fork()) == 0){
@@ -195,6 +195,8 @@ void eval(char *cmdline)
 			int state;
 			if (bg) state = BG; else state = FG;
 			addjob(jobs, pid, state, cmdline);
+			struct job_t* tmp = getjobpid(jobs, pid);
+			if (state != FG) printf("(%d) [%d] %s", tmp->jid, tmp->pid, tmp->cmdline);
 			//unblock signal
 			sigprocmask(SIG_SETMASK, &prev_one, NULL);
 			if (!bg){
@@ -344,10 +346,9 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
-    printf("%d\n",3);
 	pid_t pid;
 	int statue;
-	while ((pid = waitpid(-1, &statue, 0)) > 0){
+	while ((pid = waitpid(-1, &statue, WNOHANG)) > 0){
 		deletejob(jobs, pid);
 	}
     return;
@@ -361,17 +362,14 @@ void sigchld_handler(int sig)
 void sigint_handler(int sig) 
 {
 	pid_t pid = fgpid(jobs);
+	struct job_t* job_ = getjobpid(jobs, pid);
 	kill(-pid, SIGINT);
+	printf("Job [%d] (%d) terminated by signal 2\n", job_->jid, job_->pid);
 	deletejob(jobs, pid);
     return;
 }
 
 /*
-
-
-
-
-
  * sigtstp_handler - The kernel sends a SIGTSTP to the shell whenever
  *     the user types ctrl-z at the keyboard. Catch it and suspend the
  *     foreground job by sending it a SIGTSTP.  
@@ -379,7 +377,9 @@ void sigint_handler(int sig)
 void sigtstp_handler(int sig) 
 {
 	pid_t pid = fgpid(jobs);
+	struct job_t* job_ = getjobpid(jobs, pid);
 	kill(-pid, SIGTSTP);
+	printf("Job [%d] (%d) stopped by signal 20\n", job_->jid, job_->pid);
 	struct job_t* tmp_job = getjobpid(jobs, pid);
 	tmp_job->state = ST;
     return;
@@ -517,7 +517,6 @@ int pid2jid(pid_t pid)
 void listjobs(struct job_t *jobs) 
 {
     int i;
-    
     for (i = 0; i < MAXJOBS; i++) {
 	if (jobs[i].pid != 0) {
 	    printf("[%d] (%d) ", jobs[i].jid, jobs[i].pid);
