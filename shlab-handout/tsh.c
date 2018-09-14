@@ -184,11 +184,11 @@ void eval(char *cmdline)
 			if ((ret = setpgid(0, 0))<0){
 				//unblock signal
 				sigprocmask(SIG_SETMASK, &prev_one, NULL);
-				unix_error("eval: setpgid error!\n");
+				//unix_error("eval: setpgid error!\n");
 				exit(-1);
 			}
 			if (execve(argv[0], argv, environ)){
-				unix_error("eval: execve error!\n");
+				//unix_error("eval: execve error!\n");
 				exit(-1);
 			}
 		} else {
@@ -297,9 +297,46 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-	int temp_jid = atoi(argv[1]);
-	struct job_t* temp_job = getjobjid(jobs, temp_jid);
-	pid_t temp_pid = temp_job->pid;
+    pid_t temp_pid = -1;
+	int temp_jid = -1;
+	struct job_t* temp_job;
+	
+	if (argv[1] == 0){
+	    printf("fg command requires PID or %%jobid argument\n");
+	    return;
+	}
+	
+	if (argv[1][0] == '%'){
+	    temp_jid = atoi(argv[1]+1);
+	    if (temp_jid == 0 && !(argv[1][0] == '0' && argv[1][1] == 0)) {
+	        printf("fg: argument must be a PID or %%jobid\n");
+	        return;
+	    }
+	}
+	else {
+	    temp_pid = atoi(argv[1]);
+	    if (temp_pid == 0 && !(argv[1][0] == '0' && argv[1][1] == 0)) {
+	        printf("fg: argument must be a PID or %%jobid\n");
+	        return;
+	    }
+	}
+	
+	if (temp_pid == -1){
+	    temp_job = getjobjid(jobs, temp_jid);
+	    if (temp_job == NULL){
+	        printf("%%%d: No such job\n", temp_jid);
+	        return;
+	    }
+	    temp_pid = temp_job->pid;
+	} else {
+		temp_job = getjobpid(jobs, temp_pid);
+		if (temp_job == NULL){
+	        printf("(%d): No such process\n", temp_pid);
+	        return;
+	    }
+	    temp_jid = temp_job->jid;
+	}
+	
 	if (strcmp(argv[0], "fg") == 0) {
 		if (temp_job->state == BG) {
 			temp_job->state = FG;
@@ -313,6 +350,7 @@ void do_bgfg(char **argv)
 	if (strcmp(argv[0], "bg") == 0) {
 		if (temp_job->state == ST) {
 			temp_job->state = BG;
+			printf("(%d) [%d] %s", temp_job->jid, temp_job->pid, temp_job->cmdline);
 			kill(-temp_pid, SIGCONT);
 		}
 	}
@@ -348,7 +386,18 @@ void sigchld_handler(int sig)
 {
 	pid_t pid;
 	int statue;
-	while ((pid = waitpid(-1, &statue, WNOHANG)) > 0){
+	int child_sig;
+	while ((pid = waitpid(-1, &statue, WNOHANG | WUNTRACED)) > 0){
+        if( WIFSTOPPED(statue) ){
+            sigtstp_handler( WSTOPSIG(statue) );
+            return;
+        } else
+        if( WIFSIGNALED(statue) ) {
+            child_sig = WTERMSIG(statue);
+            if(child_sig == SIGINT)
+                sigint_handler(child_sig);
+            return;
+        }
 		deletejob(jobs, pid);
 	}
     return;
