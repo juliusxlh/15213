@@ -62,6 +62,45 @@ void coalesce(void *);
 
 /*
 */
+void coalesce(void* p)
+{
+    void* prev = PREV_BLKP(p);
+    void* next = NEXT_BLKP(p);
+    int prev_alloc_flag = GET_ALLOC(HDRP(prev));
+    int next_alloc_flag = GET_ALLOC(HDRP(NEXT));
+    if (prev_alloc_flag && !next_alloc_flag){
+        size_t size = GET_SIZE(HDRP(p)) + GET_SIZE(HDRP(prev));
+        PUT(HDRP(p), PACK(0, 0));
+        PUT(FTRP(prev), PACK(0, 0));
+        PUT(HDRP(prev), PACK(size, 0));
+        PUT(FTRP(prev), PACK(size, 0));
+        return prev;
+    } else
+    if (!prev_alloc_flag && next_alloc_flag){
+        size_t size = GET_SIZE(HDRP(p)) + GET_SIZE(HDRP(next));
+        PUT(FTRP(p), PACK(0, 0));
+        PUT(HDRP(p), PACK(size, 0));
+        PUT(FTRP(next), PACK(size, 0));
+        PUT(HDRP(next), PACK(0, 0));
+        return p;
+    } else
+    if (prev_alloc_flag && next_alloc_flag){
+        size_t size = GET_SIZE(HDRP(p)) + GET_SIZE(HDRP(prev)) + GET_SIZE(HDRP(next));
+        PUT(FTRP(prev), PACK(0, 0));
+        PUT(HDRP(prev), PACK(size, 0));
+        PUT(FTRP(p), PACK(0, 0));
+        PUT(HDRP(p), PACK(0, 0));
+        PUT(FTRP(next), PACK(size, 0));
+        PUT(HDRP(next), PACK(0, 0));
+        return prev;
+    } else {
+        return p;
+    }
+}
+
+/*
+    place the point
+*/
 void *place(void* p, size_t size)
 {
     size_t oldsize = GET_SIZE(HDRP(p));
