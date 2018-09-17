@@ -58,11 +58,37 @@ void *find_fit(size_t);
 void *extend_heap(size_t);
 void *place(void*, size_t);
 void *mm_realloc(void *, size_t);
+void coalesce(void *);
 
 /*
 */
+void *place(void* p, size_t size)
+{
+    size_t oldsize = GET_SIZE(HDRP(p));
+    PUT(HDRP(p),  PACK((size + DSIZE), 1));
+    PUT(FTRP(p), PACK((size + DSIZE), 1));
+    if (size + DSIZE != old_size){
+        void *next = NEXT_BLKP(p);
+        size_t next_size = old_size - size - DSIZE;
+        PUT(HDRP(p),  PACK(next_size, 1));
+        PUT(FTRP(p), PACK(next_size, 1));       
+    }
+    return p;
+}
+
+/*
+    sreach the whole list , and find the first empty block which size is enough
+*/
 void *find_fit(size_t size)
 {
+    void* p = heap_list;
+    while (GET_SIZE(p) != 0) // if size == 0 , it point to end
+    {
+        if (GET_ALLOC(p) == 0 && (GET_SIZE(p) - DSIZE) >= size)
+            return place(p, size);
+        p = NEXT_BLKP(p);
+    }
+    return NULL;
 }
 
 /* 
