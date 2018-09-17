@@ -62,6 +62,16 @@ void coalesce(void *);
 
 /*
 */
+void *extend_heap(size_t size)
+{
+    void* ret;
+    if (size%2 == 1) ++size;
+    size_t extend_size = MAX(size, CHUNKSIZE);
+    ret = mem_sbrk(extend_size * WSIZE);
+    return coalesce(ret);
+}
+/*
+*/
 void coalesce(void* p)
 {
     void* prev = PREV_BLKP(p);
